@@ -39,7 +39,7 @@ async function Inserir(req, res) {
 
 async function UpdateUser(req, res) {
     try {
-        const id= req.user.id; // Pega o ID vindo da URL: /usuarios/:id
+        const id= req.id_usuario; // Pega o ID vindo da Req que foi inserido na token.js
         const dados= req.body;
 
         const usuarioAtualizado= await serviceUsuario.UpdateUser(id, dados);
