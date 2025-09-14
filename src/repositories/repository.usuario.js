@@ -58,6 +58,8 @@ async function UpdateUser(id_usuario, dados) {
     // Query final
     const sql = `UPDATE usuario SET ${setClause} WHERE id_usuario = ?`;
 
+    console.log(sql);
+
     await execute(sql, valores);
 
     return { id_usuario, ...dados };
