@@ -40,10 +40,17 @@ async function ListarByEmail(email) {
 }
 
 async function UpdateUser(id_usuario, dados) {
-    // Extrai só os campos que realmente vieram no PATCH
-    const campos = Object.keys(dados);
+    // Lista de colunas válidas (proteção extra)
+    const camposPermitidos = [
+        "nome", "email", "endereco", "complemento", 
+        "bairro", "cidade", "uf", "cep", "foto"
+    ];
+
+    // Filtra apenas os campos válidos que vieram no PATCH
+    const campos = Object.keys(dados).filter(campo => camposPermitidos.includes(campo));
+
     if (campos.length === 0) {
-        throw new Error("Nenhum campo enviado para atualização");
+        throw new Error("Nenhum campo válido enviado para atualização");
     }
 
     // Monta os pares "campo = ?" dinamicamente
@@ -58,12 +65,18 @@ async function UpdateUser(id_usuario, dados) {
     // Query final
     const sql = `UPDATE usuario SET ${setClause} WHERE id_usuario = ?`;
 
-    console.log(sql);
+    console.log("SQL:", sql);
+    console.log("Valores:", valores);
 
-    await execute(sql, valores);
-
-    return { id_usuario, ...dados };
+    try {
+        await execute(sql, valores);
+        return { id_usuario, ...dados };
+    } catch (err) {
+        console.error("Erro ao atualizar usuário:", err);
+        throw new Error("Falha ao atualizar usuário no banco de dados");
+    }
 }
+
 
 async function ListarById(id_usuario) {
 

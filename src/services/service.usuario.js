@@ -1,4 +1,6 @@
 import repositoryUsuario from "../repositories/repository.usuario.js";
+import path from "path";
+import fs from "fs/promises";
 import bcrypt from "bcrypt";
 import jwt from "../token.js";
 
@@ -34,19 +36,41 @@ async function Inserir(nome, email, senha, endereco, complemento, bairro, cidade
     return usuario;
 }
 
-async function UpdateUser(id_usuario, dados) {
-    
-    const usuario= await repositoryUsuario.ListarById(id_usuario);
-    if (!usuario) {
-        throw new Error("Usuário não encontrado");
+async function UpdateUser(id_usuario, dados, arquivoFoto) {
+    // Verifica se usuário existe
+    const usuario = await repositoryUsuario.ListarById(id_usuario);
+    if (!usuario) throw new Error("Usuário não encontrado");
+
+    // Campos permitidos
+    const camposPermitidos = ["nome","email","endereco","complemento","bairro","cidade","uf","cep"];
+    const campos = Object.keys(dados).filter(c => camposPermitidos.includes(c));
+
+    // Se tiver arquivo de foto, processa
+    if (arquivoFoto) {
+        // Exemplo simples: salva a foto localmente
+        const extensao = path.extname(arquivoFoto.originalname);
+        const nomeArquivo = `user_${id_usuario}${extensao}`;
+        const caminhoDestino = path.join(__dirname, "..", "uploads", nomeArquivo);
+
+        await fs.writeFile(caminhoDestino, arquivoFoto.buffer);
+
+        // Salva a URL relativa no banco
+        campos.push("foto");
+        dados.foto = `/uploads/${nomeArquivo}`;
     }
 
-    //atualiza
-    await repositoryUsuario.UpdateUser(id_usuario, dados);
+    if (campos.length === 0) throw new Error("Nenhum campo válido para atualização");
 
-    //Retorna os dados atualizados (pode buscar no banco ou só devolver id + dados)
-    return {id: id_usuario, ...dados};
-    
+    try {
+        await repositoryUsuario.UpdateUser(id_usuario, dados);
+    } catch (err) {
+        console.error("Erro ao atualizar usuário:", err);
+        throw new Error("Falha ao atualizar usuário");
+    }
+
+    // Retorna dados atualizados do banco
+    const atualizado = await repositoryUsuario.ListarById(id_usuario);
+    return atualizado;
 }
 
 async function Login(email, senha) {

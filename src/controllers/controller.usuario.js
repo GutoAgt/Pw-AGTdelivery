@@ -1,4 +1,7 @@
+import multer from "multer";
 import serviceUsuario from "../services/service.usuario.js";
+
+const upload = multer(); // em memória, pega buffer do arquivo
 
 async function Favoritos(req, res) {
     try {
@@ -39,17 +42,19 @@ async function Inserir(req, res) {
 
 async function UpdateUser(req, res) {
     try {
-        const id= req.id_usuario; // Pega o ID vindo da Req que foi inserido na token.js
-        const dados= req.body;
+    const id = req.id_usuario; // ID do token
+        const dados = req.body;    // Campos enviados
 
-        const usuarioAtualizado= await serviceUsuario.UpdateUser(id, dados);
+        // Arquivo de foto (se enviado via FormData)
+        const arquivoFoto = req.file; 
 
-       return res.status(200).json(usuarioAtualizado);
+        // Chama o serviço passando dados + arquivo
+        const usuarioAtualizado = await serviceUsuario.UpdateUser(id, dados, arquivoFoto);
 
+        return res.status(200).json(usuarioAtualizado);
     } catch (error) {
-        res.status(400).json({error: error.message});
+        return res.status(400).json({ error: error.message });
     }
-    
 }
 
 async function Perfil(req, res) {
