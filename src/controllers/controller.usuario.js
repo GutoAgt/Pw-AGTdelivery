@@ -1,7 +1,17 @@
 import multer from "multer";
 import serviceUsuario from "../services/service.usuario.js";
 
-const upload = multer(); // em memória, pega buffer do arquivo
+// Configuração multer: em memória
+const upload = multer({
+  limits: { fileSize: 5 * 1024 * 1024 }, // limite 5MB
+  fileFilter: (req, file, cb) => {
+    // aceita apenas imagens
+    if (!file.mimetype.startsWith("image/")) {
+      return cb(new Error("Apenas arquivos de imagem são permitidos"));
+    }
+    cb(null, true);
+  },
+});
 
 async function Favoritos(req, res) {
     try {
@@ -40,22 +50,21 @@ async function Inserir(req, res) {
     }
 }
 
-async function UpdateUser(req, res) {
+async function UpdateUserController(req, res) {
     try {
-    const id = req.id_usuario; // ID do token
-        const dados = req.body;    // Campos enviados
+    const id = req.id_usuario; // id do token
+    const dados = req.body || {}; // garante que seja objeto
+    const arquivoFoto = req.file || null;
 
-        // Arquivo de foto (se enviado via FormData)
-        const arquivoFoto = req.file; 
+    const usuarioAtualizado = await serviceUsuario.UpdateUser(id, dados, arquivoFoto);
 
-        // Chama o serviço passando dados + arquivo
-        const usuarioAtualizado = await serviceUsuario.UpdateUser(id, dados, arquivoFoto);
-
-        return res.status(200).json(usuarioAtualizado);
-    } catch (error) {
-        return res.status(400).json({ error: error.message });
-    }
+    return res.status(200).json(usuarioAtualizado);
+  } catch (error) {
+    console.error("Erro UpdateUserController:", error);
+    return res.status(400).json({ error: error.message });
+  }
 }
+
 
 async function Perfil(req, res) {
     try {
@@ -68,4 +77,4 @@ async function Perfil(req, res) {
     }
 }
 
-export default { Favoritos, Login, Inserir, UpdateUser, Perfil };
+export default { Favoritos, Login, Inserir, UpdateUserController, Perfil };

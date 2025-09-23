@@ -43,7 +43,7 @@ async function UpdateUser(id_usuario, dados, arquivoFoto) {
 
     // Campos permitidos
     const camposPermitidos = ["nome","email","endereco","complemento","bairro","cidade","uf","cep"];
-    const campos = Object.keys(dados).filter(c => camposPermitidos.includes(c));
+    const campos = Object.keys(dados || {}).filter(c => camposPermitidos.includes(c));
 
     // Se tiver arquivo de foto, processa
     if (arquivoFoto) {
