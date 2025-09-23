@@ -1,4 +1,5 @@
 import { Router } from "express";
+import upload from "./index.js";
 import controllerCategoria from "./controllers/controller.categoria.js";
 import controllerBanner from "./controllers/controller.banner.js";
 import controllerEmpresa from "./controllers/controller.empresa.js";
@@ -31,6 +32,6 @@ router.get("/usuarios/favoritos", jwt.ValidateJWT, controllerUsuario.Favoritos);
 router.post("/usuarios/login", controllerUsuario.Login);
 router.post("/usuarios", controllerUsuario.Inserir);
 router.get("/usuarios/perfil", jwt.ValidateJWT, controllerUsuario.Perfil);
-router.patch("/usuarios/perfil",jwt.ValidateJWT, controllerUsuario.UpdateUserController);
+router.patch("/usuarios/perfil", upload.single("foto"), controllerUsuario.UpdateUserController);
 
 export default router; 

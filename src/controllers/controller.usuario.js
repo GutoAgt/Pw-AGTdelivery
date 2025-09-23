@@ -1,17 +1,4 @@
-import multer from "multer";
 import serviceUsuario from "../services/service.usuario.js";
-
-// Configuração multer: em memória
-const upload = multer({
-  limits: { fileSize: 5 * 1024 * 1024 }, // limite 5MB
-  fileFilter: (req, file, cb) => {
-    // aceita apenas imagens
-    if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Apenas arquivos de imagem são permitidos"));
-    }
-    cb(null, true);
-  },
-});
 
 async function Favoritos(req, res) {
     try {
