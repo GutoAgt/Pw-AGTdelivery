@@ -1,5 +1,5 @@
 import { Router } from "express";
-import upload from "./index.js";
+import multer from "multer";
 import controllerCategoria from "./controllers/controller.categoria.js";
 import controllerBanner from "./controllers/controller.banner.js";
 import controllerEmpresa from "./controllers/controller.empresa.js";
@@ -8,6 +8,19 @@ import controllerUsuario from "./controllers/controller.usuario.js";
 import jwt from "./token.js";
 
 const router = Router();
+
+// Configuração do multer (armazenamento local - pasta uploads)
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // <- pasta onde os arquivos serão salvos
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + "-" + file.originalname);
+  },
+});
+
+const upload = multer({ storage });
 
 router.get("/categorias", jwt.ValidateJWT, controllerCategoria.Listar);
 router.get("/banners", jwt.ValidateJWT, controllerBanner.Listar);
@@ -32,6 +45,6 @@ router.get("/usuarios/favoritos", jwt.ValidateJWT, controllerUsuario.Favoritos);
 router.post("/usuarios/login", controllerUsuario.Login);
 router.post("/usuarios", controllerUsuario.Inserir);
 router.get("/usuarios/perfil", jwt.ValidateJWT, controllerUsuario.Perfil);
-router.patch("/usuarios/perfil", upload.single("foto"), controllerUsuario.UpdateUserController);
+router.patch("/usuarios/perfil", jwt.ValidateJWT, upload.single("foto"), controllerUsuario.UpdateUserController);
 
 export default router; 

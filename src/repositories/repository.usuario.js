@@ -40,41 +40,22 @@ async function ListarByEmail(email) {
 }
 
 async function UpdateUser(id_usuario, dados) {
-    // Lista de colunas válidas (proteção extra)
-    const camposPermitidos = [
-        "nome", "email", "endereco", "complemento", 
-        "bairro", "cidade", "uf", "cep", "foto"
-    ];
+    // Se não mandou nada, não atualiza
+  if (!dados || Object.keys(dados).length === 0) {
+    throw new Error("Nenhum campo para atualizar");
+  }
 
-    // Filtra apenas os campos válidos que vieram no PATCH
-    const campos = Object.keys(dados).filter(campo => camposPermitidos.includes(campo));
+  // Monta dinamicamente os SETs do UPDATE
+  const campos = Object.keys(dados);
+  const valores = Object.values(dados);
 
-    if (campos.length === 0) {
-        throw new Error("Nenhum campo válido enviado para atualização");
-    }
+  const setClause = campos.map(campo => `${campo} = ?`).join(", ");
 
-    // Monta os pares "campo = ?" dinamicamente
-    const setClause = campos.map(campo => `${campo} = ?`).join(", ");
+  const sql = `UPDATE usuario SET ${setClause} WHERE id_usuario = ?`;
 
-    // Valores correspondentes
-    const valores = campos.map(campo => dados[campo]);
+  await execute(sql, [...valores, id_usuario]);
 
-    // Adiciona o id para o WHERE
-    valores.push(id_usuario);
-
-    // Query final
-    const sql = `UPDATE usuario SET ${setClause} WHERE id_usuario = ?`;
-
-    console.log("SQL:", sql);
-    console.log("Valores:", valores);
-
-    try {
-        await execute(sql, valores);
-        return { id_usuario, ...dados };
-    } catch (err) {
-        console.error("Erro ao atualizar usuário:", err);
-        throw new Error("Falha ao atualizar usuário no banco de dados");
-    }
+  return true;
 }
 
 
