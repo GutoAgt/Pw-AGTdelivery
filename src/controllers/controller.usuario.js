@@ -41,7 +41,7 @@ async function UpdateUserController(req, res) {
     try {
     const id = req.id_usuario; // id do token
     const dados = req.body || {}; // garante que seja objeto
-    const arquivoFoto = req.file || null;
+    const arquivoFoto = req.file;
 
     const usuarioAtualizado = await serviceUsuario.UpdateUser(id, dados, arquivoFoto);
 
