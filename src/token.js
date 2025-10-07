@@ -3,32 +3,37 @@ import jwt from "jsonwebtoken";
 const secretToken = "MYSECRET@123";
 
 function CreateJWT(id_usuario) {
-    const token = jwt.sign({ id_usuario }, secretToken, {
-        expiresIn: 999999
-    });
-
-    return token;
+  const token = jwt.sign({ id_usuario }, secretToken, {
+    expiresIn: 999999,
+  });
+  return token;
 }
 
 function ValidateJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
 
-    const authToken = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: "Token não informado" });
+  }
 
-    if (!authToken) {
-        return res.status(401).send({ error: "Token não informado" });
+  // Suporta "Bearer <token>" ou apenas "<token>"
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.split(" ")[1]
+    : authHeader;
+
+  try {
+    const decoded = jwt.verify(token, secretToken);
+
+    if (!decoded?.id_usuario) {
+      return res.status(401).json({ error: "Token sem ID de usuário" });
     }
 
-    const [aux, token] = authToken.split(" ");
-
-    jwt.verify(token, secretToken, (err, decoded) => {
-        if (err)
-            return res.status(401).send({ error: "Token inválido" });
-
-        // Salva id_usuario dentro da requisicao para ser usado no futuro...
-        req.id_usuario = decoded.id_usuario;
-
-        next();
-    });
+    req.id_usuario = decoded.id_usuario; // ✅ injeta o id corretamente
+    next();
+  } catch (err) {
+    console.error("Erro ValidateJWT:", err.message);
+    return res.status(401).json({ error: "Token inválido" });
+  }
 }
 
-export default { CreateJWT, ValidateJWT }
+export default { CreateJWT, ValidateJWT };

@@ -45,6 +45,6 @@ router.get("/usuarios/favoritos", jwt.ValidateJWT, controllerUsuario.Favoritos);
 router.post("/usuarios/login", controllerUsuario.Login);
 router.post("/usuarios", controllerUsuario.Inserir);
 router.get("/usuarios/perfil", jwt.ValidateJWT, controllerUsuario.Perfil);
-router.patch("/usuarios/perfil", jwt.ValidateJWT, upload.single("foto"), controllerUsuario.Perfil);
+router.patch("/usuarios/perfil", jwt.ValidateJWT, upload.single("foto"), controllerUsuario.UpdateUserController);
 
 export default router; 

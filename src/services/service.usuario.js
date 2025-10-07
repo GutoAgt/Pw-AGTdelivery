@@ -41,41 +41,53 @@ async function Inserir(nome, email, senha, endereco, complemento, bairro, cidade
     return usuario;
 }
 
-async function UpdateUser(id_usuario, dados, arquivoFoto) {
-    // Verifica se usuário existe
+async function UpdateUser(id_usuario, dados = {}, arquivoFoto = null) {
+   if (!id_usuario) throw new Error("ID do usuário não fornecido");
+  if (!dados || typeof dados !== "object") throw new Error("Dados inválidos");
+
+  // Verifica se usuário existe
   const usuario = await repositoryUsuario.ListarById(id_usuario);
   if (!usuario) throw new Error("Usuário não encontrado");
 
   // Campos permitidos
-  const camposPermitidos = ["nome", "email", "endereco", "complemento", "bairro", "cidade", "uf", "cep"];
-  const campos = Object.keys(dados || {}).filter(c => camposPermitidos.includes(c));
+  const camposPermitidos = [
+    "nome",
+    "email",
+    "endereco",
+    "complemento",
+    "bairro",
+    "cidade",
+    "uf",
+    "cep",
+  ];
+
+  const campos = Object.keys(dados)
+    .filter((c) => camposPermitidos.includes(c));
 
   // Se tiver arquivo de foto
   if (arquivoFoto) {
     // Como está usando multer.diskStorage, já temos o arquivo salvo em `arquivoFoto.path`
     const nomeArquivo = `user_${id_usuario}${path.extname(arquivoFoto.originalname)}`;
     const destino = path.join(__dirname, "..", "uploads", nomeArquivo);
-
-    // Renomeia o arquivo para garantir consistência
+    //Renomeie o arquivo para ter consistencia
     await fs.rename(arquivoFoto.path, destino);
-
-    // Adiciona a coluna "foto" no update
+    //Adiciona a coluna "foto"
     dados.foto = `/uploads/${nomeArquivo}`;
     campos.push("foto");
   }
 
-  if (campos.length === 0) throw new Error("Nenhum campo válido para atualização");
+  // Atualiza apenas os campos permitidos
+  const dadosAtualizar = {};
+  campos.forEach((campo) => {
+    dadosAtualizar[campo] = dados[campo];
+  });
 
-  try {
-    await repositoryUsuario.UpdateUser(id_usuario, dados);
-  } catch (err) {
-    console.error("Erro ao atualizar usuário:", err);
-    throw new Error("Falha ao atualizar usuário");
+  if (Object.keys(dadosAtualizar).length === 0) {
+    throw new Error("Nenhum dado válido para atualizar");
   }
 
-  // Retorna dados atualizados
-  const atualizado = await repositoryUsuario.ListarById(id_usuario);
-  return atualizado;
+  const usuarioAtualizado = await repositoryUsuario.Update(id_usuario, dadosAtualizar);
+  return usuarioAtualizado;
 }
 
 async function Login(email, senha) {
