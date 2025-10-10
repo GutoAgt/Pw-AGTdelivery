@@ -39,23 +39,16 @@ async function ListarByEmail(email) {
         return usuario[0];
 }
 
-async function UpdateUser(id_usuario, dados) {
-    // Se não mandou nada, não atualiza
-  if (!dados || Object.keys(dados).length === 0) {
-    throw new Error("Nenhum campo para atualizar");
-  }
+async function AtualizarEndereco(id_usuario, endereco, complemento, bairro, cidade, uf, cep) {
+  const sql = `
+    UPDATE usuarios
+    SET endereco = ?, complemento = ?, bairro = ?, cidade = ?, uf = ?, cep = ?
+    WHERE id_usuario = ?
+  `;
+  const valores = [endereco, complemento, bairro, cidade, uf, cep, id_usuario];
 
-  // Monta dinamicamente os SETs do UPDATE
-  const campos = Object.keys(dados);
-  const valores = Object.values(dados);
-
-  const setClause = campos.map(campo => `${campo} = ?`).join(", ");
-
-  const sql = `UPDATE usuario SET ${setClause} WHERE id_usuario = ?`;
-
-  await execute(sql, [...valores, id_usuario]);
-
-  return true;
+  const [result] = await execute(sql, valores);
+  return result.affectedRows > 0;
 }
 
 
@@ -74,4 +67,4 @@ async function ListarById(id_usuario) {
         return usuario[0];
 }
 
-export default { Favoritos, Inserir, UpdateUser, ListarByEmail, ListarById };
+export default { Favoritos, Inserir, AtualizarEndereco, ListarByEmail, ListarById };
