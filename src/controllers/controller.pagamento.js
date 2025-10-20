@@ -1,79 +1,116 @@
-import { EfiPay } from "efi-sdk"; // sua SDK já instalada
-import db from "../database.js";   // Sequelize ou outro ORM
-import { Pedido } from "../models/pedido.js"; // tabela de pedidos
+import EfiPay from "efipay";
+import db from "../database/sqlite";
 
 // Criar pagamento
 export const CriarPagamento = async (req, res) => {
   try {
-    const { id_pedido, total, tipo, card_token } = req.body;
+    const { id_pedido, total, tipo, card_token, id_empresa } = req.body;
 
-    if (!id_pedido || !total || !tipo)
-      return res.status(400).json({ error: "Parâmetros inválidos" });
-
-    let pagamento;
-
-    if (tipo === "PIX") {
-      pagamento = await EfiPay.createPixCharge({
-        orderId: id_pedido,
-        amount: total,
-        description: `Pedido #${id_pedido}`,
-      });
-    } else if (tipo === "CARTAO") {
-      if (!card_token)
-        return res.status(400).json({ error: "Token do cartão é obrigatório" });
-
-      pagamento = await EfiPay.createCardCharge({
-        orderId: id_pedido,
-        amount: total,
-        description: `Pedido #${id_pedido}`,
-        card_token,
-      });
-    } else {
-      return res.status(400).json({ error: "Tipo de pagamento inválido" });
+    if (!id_pedido || !total || !tipo || !id_empresa) {
+      return res.status(400).json({ error: "Dados insuficientes." });
     }
 
-    // Atualiza o pedido com payment_token
-    await Pedido.update(
-      { payment_token: pagamento.payment_token, status_pedido: "PENDENTE" },
-      { where: { id_pedido } }
+    // 🔹 Busca a empresa e suas credenciais
+    const empresa = await db.get(
+      `SELECT * FROM EMPRESA WHERE id_empresa = ?`,
+      [id_empresa]
     );
 
-    return res.json({ pagamento });
-  } catch (error) {
-    console.error(error.message);
-    return res.status(500).json({ error: "Falha ao processar pagamento" });
-  }
-};
-
-// Consultar status
-export const ConsultarStatus = async (req, res) => {
-  try {
-    const { payment_token } = req.params;
-    const status = await EfiPay.getPaymentStatus(payment_token);
-
-    // Atualiza pedido no banco conforme status
-    if (status === "APROVADO") {
-      await Pedido.update({ status_pedido: "APROVADO" }, { where: { payment_token } });
+    if (!empresa?.efi_client_id || !empresa?.efi_client_secret) {
+      return res.status(400).json({
+        error: "Empresa ainda não possui conta EFI configurada.",
+      });
     }
 
-    return res.json({ status });
+    // Configura SDK da empresa (subconta)
+    const options = {
+      client_id: empresa.efi_client_id,
+      client_secret: empresa.efi_client_secret,
+      sandbox: true,
+      certificate: `./certs/${empresa.efi_account_id}.pem`,
+    };
+
+    const efi = new EfiPay(options);
+    let dados = {};
+    let status_pagamento = "pendente";
+
+    // ======================================================
+    // 💰 PAGAMENTO PIX
+    // ======================================================
+    if (tipo === "PIX") {
+      const body = {
+        calendario: { expiracao: 3600 },
+        valor: { original: total.toFixed(2) },
+        chave: empresa.efi_chave_pix,
+        solicitacaoPagador: `Pagamento do pedido #${id_pedido}`,
+      };
+
+      const charge = await efi.pixCreateImmediateCharge([], body);
+      const qrcode = await efi.pixGenerateQRCode({ id: charge.loc.id });
+
+      dados = { tipo: "PIX", data: qrcode };
+      status_pagamento = "aguardando_pagamento";
+    }
+
+    // ======================================================
+    // 💳 PAGAMENTO CARTÃO
+    // ======================================================
+    if (tipo === "CARTAO") {
+      if (!card_token) {
+        return res.status(400).json({ error: "Token do cartão ausente." });
+      }
+
+      const body = {
+        payment: {
+          credit_card: {
+            payment_token: card_token,
+            billing_address: {
+              street: "Rua Exemplo",
+              number: 123,
+              neighborhood: "Centro",
+              zipcode: "01001000",
+              city: "São Paulo",
+              state: "SP",
+            },
+            customer: {
+              name: "Cliente App",
+              email: "cliente@app.com",
+              cpf: "12345678909",
+              birth: "1990-01-01",
+              phone_number: "11999999999",
+            },
+          },
+        },
+        items: [
+          {
+            name: `Pedido #${id_pedido}`,
+            value: Math.round(total * 100),
+            amount: 1,
+          },
+        ],
+      };
+
+      const charge = await efi.createCardCharge([], body);
+      dados = { tipo: "CARTAO", data: charge };
+      status_pagamento = "processando";
+    }
+
+    // ======================================================
+    // 🧾 Atualiza status_pagamento do pedido
+    // ======================================================
+    await db.run(
+      `UPDATE PEDIDOS SET status_pagamento = ? WHERE id_pedido = ?`,
+      [status_pagamento, id_pedido]
+    );
+
+    return res.json({
+      success: true,
+      mensagem: "Pagamento criado com sucesso!",
+      dados,
+      status_pagamento,
+    });
   } catch (error) {
-    console.error(error.message);
-    return res.status(500).json({ error: "Falha ao consultar status" });
-  }
-};
-
-// Webhook para atualização automática
-export const WebhookPagamento = async (req, res) => {
-  try {
-    const { payment_token, status } = req.body;
-
-    // Atualiza status do pedido
-    await Pedido.update({ status_pedido: status }, { where: { payment_token } });
-
-    return res.json({ ok: true });
-  } catch (error) {
-    console.error("Erro webhook pagamento:", error.message);
-    return res.status(500).json({ error: "Erro ao processar webhook" });
+    console.error("Erro ao criar pagamento:", error);
+    res.status(500).json({ error: error.message });
   }
 };

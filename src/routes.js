@@ -17,6 +17,8 @@ router.post("/pagamentos", jwt.ValidateJWT, CriarPagamento)
 router.get("/pagamentos/:payment_token/status", jwt.ValidateJWT, ConsultarStatus);
 // Webhook da Efi (atualiza automaticamente status do pagamento)
 router.post("/pagamentos/webhook", WebhookPagamento); // sem JWT
+// rota para criar subconta EFI
+router.post("/:id_empresa/subconta-efi", controllerEmpresa.CriarSubcontaEfi)
 
 // Empresas
 router.get("/empresas/destaques", jwt.ValidateJWT, controllerEmpresa.Destaques);

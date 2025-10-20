@@ -73,4 +73,24 @@ async function ListarProdutoId(req, res) {
     }
 }
 
-export default { Destaques, Listar, InserirFavorito, ExcluirFavorito, Cardapio, ListarProdutoId };
+async function CriarSubcontaEfi(req, res) {
+  try {
+    const id_empresa = req.params.id_empresa; // ou req.body, dependendo da sua rota
+    const { nome, email, cpf_cnpj, chave_pix } = req.body;
+
+    const resultado = await serviceEmpresa.CriarSubcontaEfi({
+      id_empresa,
+      nome,
+      email,
+      cpf_cnpj,
+      chave_pix,
+    });
+
+    res.status(201).json(resultado);
+  } catch (error) {
+    console.error("Erro ao criar subconta Efi:", error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export default { Destaques, Listar, InserirFavorito, ExcluirFavorito, Cardapio, ListarProdutoId, CriarSubcontaEfi };
