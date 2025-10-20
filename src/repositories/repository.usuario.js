@@ -39,19 +39,6 @@ async function ListarByEmail(email) {
         return usuario[0];
 }
 
-async function AtualizarEndereco(id_usuario, endereco, complemento, bairro, cidade, uf, cep) {
-  const sql = `
-    UPDATE usuarios
-    SET endereco = ?, complemento = ?, bairro = ?, cidade = ?, uf = ?, cep = ?
-    WHERE id_usuario = ?
-  `;
-  const valores = [endereco, complemento, bairro, cidade, uf, cep, id_usuario];
-
-  const [result] = await execute(sql, valores);
-  return result.affectedRows > 0;
-}
-
-
 async function ListarById(id_usuario) {
 
     const sql = `select id_usuario, nome, email, endereco, complemento,
@@ -67,4 +54,4 @@ async function ListarById(id_usuario) {
         return usuario[0];
 }
 
-export default { Favoritos, Inserir, AtualizarEndereco, ListarByEmail, ListarById };
+export default { Favoritos, Inserir, ListarByEmail, ListarById };

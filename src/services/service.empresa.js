@@ -42,43 +42,4 @@ async function ListarProdutoId(id_empresa, id_produto) {
     return produto;
 }
 
-async function CriarSubcontaEfi({ id_empresa, nome, email, cpf_cnpj, chave_pix }) {
-  if (!id_empresa || !nome || !email || !cpf_cnpj || !chave_pix) {
-    throw new Error("Dados incompletos para criar subconta EFI.");
-  }
-
-  const efi = new EfiPay(options);
-
-  // Cria subconta (empresa)
-  const subconta = await efi.createAccount([], {
-    type: "payment_account",
-    name: nome,
-    email: email,
-    cpf_cnpj: cpf_cnpj,
-  });
-
-  // Cria credenciais específicas da subconta
-  const credentials = await efi.createAccountCredentials([], {
-    account_id: subconta.data.id,
-  });
-
-  // Atualiza banco via repository
-  await repositoryEmpresa.SalvarCredenciaisEfi({
-    id_empresa,
-    efi_account_id: subconta.data.id,
-    efi_client_id: credentials.data.client_id,
-    efi_client_secret: credentials.data.client_secret,
-    efi_chave_pix: chave_pix,
-  });
-
-  return {
-    success: true,
-    mensagem: "Subconta EFI criada com sucesso!",
-    dados: {
-      id_account: subconta.data.id,
-      client_id: credentials.data.client_id,
-    },
-  };
-}
-
-export default { Destaques, Listar, InserirFavorito, ExcluirFavorito, Cardapio, ListarProdutoId, CriarSubcontaEfi };
+export default { Destaques, Listar, InserirFavorito, ExcluirFavorito, Cardapio, ListarProdutoId };

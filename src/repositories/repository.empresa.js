@@ -121,31 +121,4 @@ async function ListarProdutoId(id_empresa, id_produto) {
     return produto[0];
 }
 
-async function SalvarCredenciaisEfi({
-  id_empresa,
-  efi_account_id,
-  efi_client_id,
-  efi_client_secret,
-  efi_chave_pix,
-}) {
-  const sql = `
-    UPDATE EMPRESA SET
-      efi_account_id = ?,
-      efi_client_id = ?,
-      efi_client_secret = ?,
-      efi_chave_pix = ?
-    WHERE id_empresa = ?
-  `;
-
-  await execute(sql, [
-    efi_account_id,
-    efi_client_id,
-    efi_client_secret,
-    efi_chave_pix,
-    id_empresa,
-  ]);
-
-  return true;
-}
-
-export default { Destaques, Listar, InserirFavorito, ExcluirFavorito, Cardapio, ListarProdutoId, SalvarCredenciaisEfi };
+export default { Destaques, Listar, InserirFavorito, ExcluirFavorito, Cardapio, ListarProdutoId };
