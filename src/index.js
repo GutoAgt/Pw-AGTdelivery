@@ -2,12 +2,10 @@ import express from "express";
 import cors from "cors";
 import router from "./routes.js";
 import bodyParser from "body-parser";
-import dotenv from "dotenv";
 import { updateStatusAutomatico } from "./controllers/controller.empresas.js";
 import pagamentoRoutes from "./routes/pagamentoRoutes.js";
 import empresasRoutes from "./routes/empresas.routes.js";
 
-dotenv.config()
 const app = express();
 
 // Middlewares...
